@@ -8,12 +8,10 @@ If you publish work using this script please cite the relevant PsychoPy publicat
 """
 
 from __future__ import division  # so that 1/3=0.333 instead of 1/3=0
+import cProfile
 from psychopy import visual, core, data, event, logging, sound, gui
 from psychopy.constants import *  # things like STARTED, FINISHED
-from psychopy.tools.coordinatetools import pol2cart
 import numpy as np  # whole numpy lib is available, prepend 'np.'
-from numpy import sin, cos, tan, log, log10, pi, average, sqrt, std, deg2rad, rad2deg, linspace, asarray
-from numpy.random import random, randint, normal, shuffle
 import random
 import os  # handy system and path functions
 
@@ -162,12 +160,15 @@ trials = data.TrialHandler(nReps=1, method=u'random',
 thisExp.addLoop(trials)  # add the loop to the experiment
 thisTrial = trials.trialList[0]  # so we can initialise stimuli with some values
 # abbreviate parameter names if possible (e.g. rgb=thisTrial.rgb)
-if thisTrial != None:
-    for paramName in thisTrial.keys():
-        exec(paramName + '= thisTrial.' + paramName)
+#if thisTrial != None:
+#    for paramName in thisTrial.keys():
+#        exec(paramName + '= thisTrial.' + paramName)
 
 screenRec = visual.Rect(primary, width=width/2, height=height/2)
 screenRec.fillColor = 'black'
+#screenRec.fillColor = 'grey'
+screenRec.lineWidth = 10
+screenRec.lineColor = 'black'
 
 nDots = 1000
 dotSize = 5
@@ -203,7 +204,11 @@ for thisTrial in trials:
     
     dots = visual.ElementArrayStim(primary, elementTex=None, elementMask='circle', nElements=nDots, 
                                    sizes=dotSize, units = 'pix', xys = coords)
-
+    
+    percentConnected = 0.75
+    numOfTargets = 3
+    inclSecondScreen = 1
+    
     # Randomly select some circles subject must track
     print "percent connected:" + str(percentConnected)
     print "num of targets:" +str(numOfTargets)
@@ -218,9 +223,9 @@ for thisTrial in trials:
     
     currentLoop = trials
     # abbreviate parameter names if possible (e.g. rgb = thisTrial.rgb)
-    if thisTrial != None:
-        for paramName in thisTrial.keys():
-            exec(paramName + '= thisTrial.' + paramName)
+    #if thisTrial != None:
+    #    for paramName in thisTrial.keys():
+    #        exec(paramName + '= thisTrial.' + paramName)
     
     #------Prepare to start Routine "trial"-------
     t = 0
@@ -246,7 +251,7 @@ for thisTrial in trials:
     while continueRoutine:
         # get current time
         t = trialClock.getTime()
-        frameN = frameN + 1  # number of completed frames (so 0 is the first frame)
+        #frameN = frameN + 1  # number of completed frames (so 0 is the first frame)
         # update/draw components on each frame
         
         # *circle* updates
@@ -284,7 +289,7 @@ for thisTrial in trials:
                         dotXys[dotIdx][0] += x
                         dotXys[dotIdx][1] += y
                 
-                if circle.pos[0] <= (-width/4)-15 or circle.pos[0] >= (width/4)-15 or circle.pos[1] <= (-height/4)-15 or circle.pos[1] >= (height/4)-15:
+                if circle.pos[0] <= (-width/4)+15 or circle.pos[0] >= (width/4)-15 or circle.pos[1] <= (-height/4)+15 or circle.pos[1] >= (height/4)-15:
                     a = a + np.pi
                 else:
                     # else randomly rotate the stimulus a bit
@@ -293,8 +298,8 @@ for thisTrial in trials:
                 circleAngles[index] = a
             
             #for dotInx in notConnectedDotIndexs:
-            #    dotXys[dotInx[0]][0] += random.choice([-1, 0, 1])
-            #    dotXys[dotInx[0]][1] += random.choice([-1, 0, 1])
+                #dotXys[dotInx[0]][0] += random.choice([-2, 0, 2])
+                #dotXys[dotInx[0]][1] += random.choice([-2, 0, 2])
             
             dots.setXYs(dotXys)
             
@@ -305,12 +310,6 @@ for thisTrial in trials:
             mouse.frameNStart = frameN  # exact frame index
             mouse.status = STARTED
             event.mouseButtons = [0, 0, 0]  # reset mouse buttons to be 'up'
-            #clickCountText = visual.TextStim(win=primary, ori=0, name='clickCountText',
-            #                    text=clickCount, font=u'Arial',
-            #                    pos=[-600, 600], height=0.1, wrapWidth=None,
-            #                    color=u'white', colorSpace=u'rgb', opacity=1,
-            #                    depth=0.0)
-            #clickCountText.setAutoDraw(True)
         if mouse.status == STARTED:  # only update if started and not stopped!
             if int(inclSecondScreen) > 0:
                 dots.draw()
@@ -333,13 +332,13 @@ for thisTrial in trials:
                 continueRoutine = False
                 
         # *ISI* period
-        if t >= 0.0 and ISI.status == NOT_STARTED:
+        #if t >= 0.0 and ISI.status == NOT_STARTED:
             # keep track of start time/frame for later
-            ISI.tStart = t  # underestimates by a little under one frame
-            ISI.frameNStart = frameN  # exact frame index
-            ISI.start(2)
-        elif ISI.status == STARTED: #one frame should pass before updating params and completing
-            ISI.complete() #finish the static period
+            #ISI.tStart = t  # underestimates by a little under one frame
+            #ISI.frameNStart = frameN  # exact frame index
+            #ISI.start(2)
+        #elif ISI.status == STARTED: #one frame should pass before updating params and completing
+            #ISI.complete() #finish the static period
         
         # check if all components have finished
         if not continueRoutine:  # a component has requested a forced-end of Routine
@@ -360,7 +359,9 @@ for thisTrial in trials:
             primary.flip()
         else:  # this Routine was not non-slip safe so reset non-slip timer
             routineTimer.reset()
-    
+        
+        #core.wait(0.001)
+        
     #-------Ending Routine "trial"-------
     for thisComponent in trialComponents:
         if hasattr(thisComponent, "setAutoDraw"):
