@@ -8,8 +8,7 @@ If you publish work using this script please cite the relevant PsychoPy publicat
 """
 
 from __future__ import division  # so that 1/3=0.333 instead of 1/3=0
-import cProfile
-from psychopy import visual, core, data, event, logging, sound, gui
+from psychopy import visual, core, data, event, logging, sound, gui, monitors
 from psychopy.constants import *  # things like STARTED, FINISHED
 import numpy as np  # whole numpy lib is available, prepend 'np.'
 import random
@@ -57,7 +56,8 @@ thisExp = data.ExperimentHandler(name=expName, version='',
 width = 1440
 height = 900
 
-primary = visual.Window(size=[width, height], fullscr=False, screen=0, allowGUI=True, units='pix')
+mon = monitors.Monitor('testMonitor')
+primary = visual.Window(size=[width, height], fullscr=False, screen=0, allowGUI=True, units='pix', monitor=mon)
 
 # store frame rate of monitor if we can measure it successfully
 expInfo['frameRate']=primary.getActualFrameRate()
@@ -157,17 +157,18 @@ trials = data.TrialHandler(nReps=1, method=u'random',
     extraInfo=expInfo, originPath=None,
     trialList=data.importConditions(u'conditions.xlsx'),
     seed=None, name='trials')
+
 thisExp.addLoop(trials)  # add the loop to the experiment
 thisTrial = trials.trialList[0]  # so we can initialise stimuli with some values
 # abbreviate parameter names if possible (e.g. rgb=thisTrial.rgb)
-#if thisTrial != None:
-#    for paramName in thisTrial.keys():
-#        exec(paramName + '= thisTrial.' + paramName)
+if thisTrial != None:
+    for paramName in thisTrial.keys():
+        exec(paramName + '= thisTrial.' + paramName)
 
 screenRec = visual.Rect(primary, width=width/2, height=height/2)
 screenRec.fillColor = 'black'
 #screenRec.fillColor = 'grey'
-screenRec.lineWidth = 10
+#screenRec.lineWidth = 10
 screenRec.lineColor = 'black'
 
 nDots = 1000
@@ -176,13 +177,15 @@ nCircles = 10
 circleSize = 30
 speed = 1.5
 maxRotSpeed = .2
+timeTargetVisible = 3
+timeMoving = 10
 
 for thisTrial in trials:
     circles = []
     circleAngles = []
     for i in range(nCircles):
         circle = visual.Polygon(primary, name='circle',
-            edges = 90, size=[circleSize, circleSize], units = 'pix',
+            edges = 90, size=circleSize, units = 'pix',
             ori=0, pos=[random.randint((-width/4)+15, (width/4)-15), random.randint((-height/4)+15, (height/4)-15)],
             lineWidth=1, lineColor=[1,1,1], lineColorSpace=u'rgb',
             fillColor=[1,1,1], fillColorSpace=u'rgb',
@@ -205,27 +208,39 @@ for thisTrial in trials:
     dots = visual.ElementArrayStim(primary, elementTex=None, elementMask='circle', nElements=nDots, 
                                    sizes=dotSize, units = 'pix', xys = coords)
     
-    percentConnected = 0.75
-    numOfTargets = 3
-    inclSecondScreen = 1
+    percentConnectedVar = thisTrial['percentConnected']
+    numOfTargetsVar = thisTrial['numOfTargets']
+    inclSecondScreenVar = thisTrial['inclSecondScreen']
     
     # Randomly select some circles subject must track
-    print "percent connected:" + str(percentConnected)
-    print "num of targets:" +str(numOfTargets)
-    print "include second screen:" +str(inclSecondScreen)
+    print "percent connected:" + str(percentConnectedVar)
+    print "num of targets:" +str(numOfTargetsVar)
+    print "include second screen:" +str(inclSecondScreenVar)
     
-    targetsNum = int(numOfTargets)
-    keys = random.sample(circles, targetsNum)
-    connectedDotsIndexs = random.sample(range(0, nDots),  int(nDots * percentConnected))
-    vals = chunk(connectedDotsIndexs, targetsNum)
-    targets = dict(zip(keys, vals))
-    notConnectedDotIndexs = [i for j, i in enumerate(dots.xys) if j not in connectedDotsIndexs]
+    targetsNum = int(numOfTargetsVar)
+    targetsSelectedKeys = random.sample(circles, targetsNum)
+    
+    if (percentConnectedVar >= 100):
+        connectedDotsIndexs = range(0, nDots)
+    else:
+        connectedDotsIndexs = random.sample(range(0, nDots),  int(nDots * percentConnectedVar))
+    
+    print "number of connected dots:" + str(len(connectedDotsIndexs))
+    
+    connectedDotsChunkedEvenly = chunk(connectedDotsIndexs, targetsNum)
+    
+    # Creates dictionary of targets mapped to its connected dots
+    targets = dict(zip(targetsSelectedKeys, connectedDotsChunkedEvenly))
+    
+    flattened = [x for sublist in connectedDotsChunkedEvenly for x in sublist]
+    
+    notConnectedDotIndexs = [i for i in range(0, nDots) if i not in flattened]
     
     currentLoop = trials
     # abbreviate parameter names if possible (e.g. rgb = thisTrial.rgb)
-    #if thisTrial != None:
-    #    for paramName in thisTrial.keys():
-    #        exec(paramName + '= thisTrial.' + paramName)
+    if thisTrial != None:
+        for paramName in thisTrial.keys():
+            exec(paramName + '= thisTrial.' + paramName)
     
     #------Prepare to start Routine "trial"-------
     t = 0
@@ -255,19 +270,19 @@ for thisTrial in trials:
         # update/draw components on each frame
         
         # *circle* updates
-        if t >= 0.0 and t <= 2:
-            if int(inclSecondScreen) > 0:
+        if t >= 0.0 and t <= timeTargetVisible:
+            if int(inclSecondScreenVar) > 0:
                 dots.draw()
             screenRec.draw()
             for circle in circles:
                 if circle in targets: circle.fillColor = 'red'
                 circle.draw()
                 
-        elif t >= 2 and t <= 12:
+        elif t >= timeTargetVisible and t <= timeMoving + timeTargetVisible :
             dotXys = dots.xys
             
             # the draw is here so drawing is in correct order and draws rec over the top of dots
-            if int(inclSecondScreen) > 0:
+            if int(inclSecondScreenVar) > 0:
                 dots.draw()
             screenRec.draw()
             
@@ -286,8 +301,12 @@ for thisTrial in trials:
                 
                 if circle in targets:
                     for dotIdx in targets[circle]:
-                        dotXys[dotIdx][0] += x
-                        dotXys[dotIdx][1] += y
+                        if dotXys[dotIdx][0] <= -width/2 +20 or dotXys[dotIdx][0] >= width/2 +20 or dotXys[dotIdx][1] <= -height/2 +20 or dotXys[dotIdx][1] >= height/2 +20:
+                            dotXys[dotIdx][0] = dotXys[dotIdx][0] * -1
+                            dotXys[dotIdx][1] = dotXys[dotIdx][1] * -1
+                        else:
+                            dotXys[dotIdx][0] += x
+                            dotXys[dotIdx][1] += y
                 
                 if circle.pos[0] <= (-width/4)+15 or circle.pos[0] >= (width/4)-15 or circle.pos[1] <= (-height/4)+15 or circle.pos[1] >= (height/4)-15:
                     a = a + np.pi
@@ -297,21 +316,25 @@ for thisTrial in trials:
                 
                 circleAngles[index] = a
             
-            #for dotInx in notConnectedDotIndexs:
-                #dotXys[dotInx[0]][0] += random.choice([-2, 0, 2])
-                #dotXys[dotInx[0]][1] += random.choice([-2, 0, 2])
+            for dotInx in notConnectedDotIndexs:
+                if dotXys[dotInx][0] <= -width/2 +2 or dotXys[dotInx][0] >= width/2 +2 or dotXys[dotInx][1] <= -height/2 +2 or dotXys[dotInx][1] >= height/2 +2:
+                    dotXys[dotInx][0] = dotXys[dotInx][0] * -1
+                    dotXys[dotInx][1] = dotXys[dotInx][1] * -1
+                else:
+                    dotXys[dotInx][0] += (random.random()-.5) * 2
+                    dotXys[dotInx][1] += (random.random()-.5) * 2
             
             dots.setXYs(dotXys)
             
         # *mouse* updates
-        if t >= 12 and mouse.status == NOT_STARTED:
+        if t >= timeMoving + timeTargetVisible and mouse.status == NOT_STARTED:
             # keep track of start time/frame for later
             mouse.tStart = t  # underestimates by a little under one frame
             mouse.frameNStart = frameN  # exact frame index
             mouse.status = STARTED
             event.mouseButtons = [0, 0, 0]  # reset mouse buttons to be 'up'
         if mouse.status == STARTED:  # only update if started and not stopped!
-            if int(inclSecondScreen) > 0:
+            if int(inclSecondScreenVar) > 0:
                 dots.draw()
             screenRec.draw()
             for circle in circles:
@@ -354,13 +377,15 @@ for thisTrial in trials:
         if event.getKeys(["escape"]):
             core.quit()
         
+        primary.flip()
         # refresh the screen
-        if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
-            primary.flip()
-        else:  # this Routine was not non-slip safe so reset non-slip timer
-            routineTimer.reset()
-        
-        #core.wait(0.001)
+        #if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
+            #primary.flip()
+        #else:  # this Routine was not non-slip safe so reset non-slip timer
+        #    routineTimer.reset()
+    
+
+    #core.wait(2)
         
     #-------Ending Routine "trial"-------
     for thisComponent in trialComponents:
