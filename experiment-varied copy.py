@@ -160,7 +160,7 @@ for thisComponent in instructionsComponents:
 # set up handler to look after randomisation of conditions etc
 trials = data.TrialHandler(nReps=1, method=u'sequential', 
     extraInfo=expInfo, originPath=None,
-    trialList=data.importConditions(u'conditions-fixed.xlsx'),
+    trialList=data.importConditions(u'conditions-varied-hide3.xlsx'),
     seed=None, name='trials')
 
 thisExp.addLoop(trials)  # add the loop to the experiment
@@ -176,23 +176,22 @@ screenRec.fillColor = 'black'
 #screenRec.lineWidth = 10
 screenRec.lineColor = 'black'
 
-nDots = 800
 dotSize = 5
 nCircles = 10
 circleSize = 10
 speed = 1
 maxRotSpeed = .2
-timeTargetVisible = 4
-timeMoving = 8
+timeTargetVisible = 5
+timeMoving = 10
 
 for thisTrial in trials:
-    percentConnectedVar = thisTrial['percentConnected']
+    numOfDotsVar = thisTrial['numOfDots']
     numOfTargetsVar = thisTrial['numOfTargets']
     inclSecondScreenVar = int(thisTrial['inclSecondScreen'])
     hidePrimaryVar = int(thisTrial['hidePrimary'])
     
     # Randomly select some circles subject must track
-    print "percent connected:" + str(percentConnectedVar)
+    print "num of dots:" + str(numOfDotsVar)
     print "num of targets:" +str(numOfTargetsVar)
     print "include second screen:" +str(inclSecondScreenVar)
     print "hide primary:" +str(hidePrimaryVar)
@@ -211,40 +210,31 @@ for thisTrial in trials:
     
     # Randomly place dots bounded around the primary screen
     coords = []
-    dotsAngles = []
-    while(len(coords) < nDots):
-        dotsAngles.append(random.random() * 2*np.pi)
-        randx = random.randint(-width/2, width/2)
-        randy = random.randint(-height/2, height/2)
-        
+
+    while(len(coords) < numOfDotsVar):
+        randx = random.randint(-635, 635)
+        randy = random.randint(-355, 355)
+        #640
+        #360
         if randy in range(int(-height/6.5), int(height/6.5)):
             if randx not in range(int(-width/6.5), int(width/6.5)):
                 coords.append([randx, randy])
         else:
             coords.append([randx, randy])
     
-    dots = visual.ElementArrayStim(primary, elementTex=None, elementMask='circle', nElements=nDots, 
+    dots = visual.ElementArrayStim(primary, elementTex=None, elementMask='circle', nElements=numOfDotsVar, 
                                    sizes=dotSize, units = 'pix', xys = coords)
     
     targetsNum = int(numOfTargetsVar)
     targetsSelectedKeys = random.sample(circles, targetsNum)
-    
-    if (percentConnectedVar >= 100):
-        connectedDotsIndexs = range(0, nDots)
-    else:
-        connectedDotsIndexs = random.sample(range(0, nDots),  int(nDots * percentConnectedVar))
-    
-    print "number of connected dots:" + str(len(connectedDotsIndexs))
+
+    connectedDotsIndexs = range(0, numOfDotsVar)
     
     connectedDotsChunkedEvenly = chunk(connectedDotsIndexs, targetsNum)
     
     # Creates dictionary of targets mapped to its connected dots
     targets = dict(zip(targetsSelectedKeys, connectedDotsChunkedEvenly))
-    
-    flattened = [x for sublist in connectedDotsChunkedEvenly for x in sublist]
-    
-    notConnectedDotIndexs = [i for i in range(0, nDots) if i not in flattened]
-    
+
     currentLoop = trials
     # abbreviate parameter names if possible (e.g. rgb = thisTrial.rgb)
     if thisTrial != None:
@@ -294,6 +284,7 @@ for thisTrial in trials:
             # the draw is here so drawing is in correct order and draws rec over the top of dots
             if inclSecondScreenVar > 0:
                 dots.draw()
+                
             screenRec.draw()
             
             for index, circle in enumerate(circles):
@@ -309,6 +300,7 @@ for thisTrial in trials:
                 
                 if hidePrimaryVar > 0 and t >= 10.0 and t <= 11.0:
                     pass
+                    #print t
                 else:
                     circle.draw()
                 
@@ -329,43 +321,28 @@ for thisTrial in trials:
                 if circle.pos[0] <= (-width/6.5)+10 or circle.pos[0] >= (width/6.5)-10 or circle.pos[1] <= (-height/6.5)+10 or circle.pos[1] >= (height/6.5)-10:
                     a = a + np.pi
                 else:
+                    # Fix this
+                    #for x in circles:
+                    #    if not circle == x:
+                    #        if circle.overlaps(x):
+                    #            a = a + np.pi
+                    
                     # else randomly rotate the stimulus a bit
                     a += (random.random()-.5) * maxRotSpeed
                 
                 circleAngles[index] = a
-            
-            for dotInx in notConnectedDotIndexs:
-                da = dotsAngles[dotInx]
-                dx = speed * np.cos(da)
-                dy = speed * np.sin(da) 
-                
-                da += (random.random()-.5) * maxRotSpeed
-                
-                dotXys[dotInx][0] += dx
-                dotXys[dotInx][1] += dy
-                
-                if dotXys[dotInx][0] <= (-width/2)+10:
-                    dotXys[dotInx][0] = (dotXys[dotInx][0] * -1) - 5
-                elif dotXys[dotInx][0] >= (width/2)-10:
-                    dotXys[dotInx][0] = (dotXys[dotInx][0] * -1) + 5
-                elif dotXys[dotInx][1] <= (-height/2)+10:
-                    dotXys[dotInx][1] = (dotXys[dotInx][1] * -1) - 5
-                if dotXys[dotInx][1] >= (height/2)-10:
-                    dotXys[dotInx][1] = (dotXys[dotInx][1] * -1) + 5
-                
-                dotsAngles[index] = da
                 
             dots.setXYs(dotXys)
             
         # *mouse* updates
         if t >= timeMoving + timeTargetVisible and mouse.status == NOT_STARTED:
             # Check number of dots on screen
-            count = 0
-            for pair in dots.xys:
-                if -width/2 <= pair[0] <= width/2 and -height/2 <= pair[1] <= height/2:
-                    count += 1
-            
-            print "count: " + str(count)
+            #count = 0
+            #for pair in dots.xys:
+            #    if -width/2 <= pair[0] <= width/2 and -height/2 <= pair[1] <= height/2:
+            #        count += 1
+            #
+            #print "count: " + str(count)
             
             # keep track of start time/frame for later
             mouse.tStart = t  # underestimates by a little under one frame
@@ -394,6 +371,15 @@ for thisTrial in trials:
                 # abort routine on response
                 clickResponseTime = t - mouse.tStart
                 continueRoutine = False
+                
+        # *ISI* period
+        #if t >= 0.0 and ISI.status == NOT_STARTED:
+            # keep track of start time/frame for later
+            #ISI.tStart = t  # underestimates by a little under one frame
+            #ISI.frameNStart = frameN  # exact frame index
+            #ISI.start(2)
+        #elif ISI.status == STARTED: #one frame should pass before updating params and completing
+            #ISI.complete() #finish the static period
         
         # check if all components have finished
         if not continueRoutine:  # a component has requested a forced-end of Routine

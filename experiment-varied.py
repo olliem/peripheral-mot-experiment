@@ -160,7 +160,7 @@ for thisComponent in instructionsComponents:
 # set up handler to look after randomisation of conditions etc
 trials = data.TrialHandler(nReps=1, method=u'sequential', 
     extraInfo=expInfo, originPath=None,
-    trialList=data.importConditions(u'conditions-varied-hide2.xlsx'),
+    trialList=data.importConditions(u'conditions-varied-hide3.xlsx'),
     seed=None, name='trials')
 
 thisExp.addLoop(trials)  # add the loop to the experiment
@@ -180,8 +180,8 @@ dotSize = 5
 nCircles = 10
 circleSize = 10
 speed = 1
-maxRotSpeed = .25
-timeTargetVisible = 1
+maxRotSpeed = .2
+timeTargetVisible = 5
 timeMoving = 10
 
 for thisTrial in trials:
@@ -225,15 +225,33 @@ for thisTrial in trials:
     dots = visual.ElementArrayStim(primary, elementTex=None, elementMask='circle', nElements=numOfDotsVar, 
                                    sizes=dotSize, units = 'pix', xys = coords)
     
+    percentConnectedVar = thisTrial['percentConnected']
+    numOfTargetsVar = thisTrial['numOfTargets']
+    inclSecondScreenVar = thisTrial['inclSecondScreen']
+    
+    # Randomly select some circles subject must track
+    print "percent connected:" + str(percentConnectedVar)
+    print "num of targets:" +str(numOfTargetsVar)
+    print "include second screen:" +str(inclSecondScreenVar)
+    
     targetsNum = int(numOfTargetsVar)
     targetsSelectedKeys = random.sample(circles, targetsNum)
-
-    connectedDotsIndexs = range(0, numOfDotsVar)
+    
+    if (percentConnectedVar >= 100):
+        connectedDotsIndexs = range(0, nDots)
+    else:
+        connectedDotsIndexs = random.sample(range(0, nDots),  int(nDots * percentConnectedVar))
+    
+    print "number of connected dots:" + str(len(connectedDotsIndexs))
     
     connectedDotsChunkedEvenly = chunk(connectedDotsIndexs, targetsNum)
     
     # Creates dictionary of targets mapped to its connected dots
     targets = dict(zip(targetsSelectedKeys, connectedDotsChunkedEvenly))
+    
+    flattened = [x for sublist in connectedDotsChunkedEvenly for x in sublist]
+    
+    notConnectedDotIndexs = [i for i in range(0, nDots) if i not in flattened]
 
     currentLoop = trials
     # abbreviate parameter names if possible (e.g. rgb = thisTrial.rgb)
@@ -300,7 +318,6 @@ for thisTrial in trials:
                 
                 if hidePrimaryVar > 0 and t >= 10.0 and t <= 11.0:
                     pass
-                    #print t
                 else:
                     circle.draw()
                 
@@ -331,7 +348,15 @@ for thisTrial in trials:
                     a += (random.random()-.5) * maxRotSpeed
                 
                 circleAngles[index] = a
-                
+            
+            for dotInx in notConnectedDotIndexs:
+                if dotXys[dotInx][0] <= -width/2 +2 or dotXys[dotInx][0] >= width/2 +2 or dotXys[dotInx][1] <= -height/2 +2 or dotXys[dotInx][1] >= height/2 +2:
+                    dotXys[dotInx][0] = dotXys[dotInx][0] * -1
+                    dotXys[dotInx][1] = dotXys[dotInx][1] * -1
+                else:
+                    dotXys[dotInx][0] += (random.random()-.5) * 2
+                    dotXys[dotInx][1] += (random.random()-.5) * 2
+            
             dots.setXYs(dotXys)
             
         # *mouse* updates
