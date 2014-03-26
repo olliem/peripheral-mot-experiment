@@ -178,7 +178,7 @@ screenRec.lineColor = 'black'
 
 nDots = 800
 dotSize = 5
-nCircles = 10
+nCircles = 8
 circleSize = 10
 speed = 1
 maxRotSpeed = .2
