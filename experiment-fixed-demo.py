@@ -158,9 +158,9 @@ for thisComponent in instructionsComponents:
         thisComponent.setAutoDraw(False)
 
 # set up handler to look after randomisation of conditions etc
-trials = data.TrialHandler(nReps=3, method=u'random', 
+trials = data.TrialHandler(nReps=1, method=u'random', 
     extraInfo=expInfo, originPath=None,
-    trialList=data.importConditions(u'conditions-fixed.xlsx'),
+    trialList=data.importConditions(u'conditions-demo.xlsx'),
     seed=None, name='trials')
 
 thisExp.addLoop(trials)  # add the loop to the experiment
